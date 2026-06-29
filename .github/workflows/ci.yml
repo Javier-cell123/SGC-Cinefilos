@@ -1,0 +1,33 @@
+name: CineFlow CI Pipeline
+
+# El pipeline se activará con cada Push o Pull Request a la rama principal (main o master)
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Descargar el código del repositorio en la máquina virtual
+    - name: Checkout del código
+      uses: actions/checkout@v4
+
+    # 2. Instalar Node.js en el entorno virtual
+    - name: Configurar Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: backend/package.json
+
+    # 3. Instalar las dependencias usando el Makefile
+    - name: Instalar dependencias del Backend
+      run: make install
+
+    # 4. Validar la calidad del código (Estilo y Sintaxis) usando el Makefile
+    - name: Ejecutar Linter (ESLint)
+      run: make lint

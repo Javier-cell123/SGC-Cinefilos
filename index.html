@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>CineFilos SGC - Sistema Profesional v6</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function CineFlowSGC() {
+            const [usuario, setUsuario] = useState(null);
+            const [vista, setVista] = useState('cartelera');
+            
+            const [peliculas, setPeliculas] = useState(() => {
+                const p = localStorage.getItem('sgc_peliculas_v6');
+                return p ? JSON.parse(p) : [
+                    { id: 1, titulo: "The Batman", genero: "Acción", horario: "21:00", poster: "./imagenes/batman.jpg" },
+                    { id: 2, titulo: "Sonic 3", genero: "Aventura", horario: "15:00", poster: "./imagenes/Sonic.jpg" }
+                ];
+            });
+
+            const [productos, setProductos] = useState([
+                { id: 1, nombre: "Popcorn Grande", precio: 5500, stock: 15 },
+                { id: 2, nombre: "Bebida XL", precio: 2500, stock: 10 },
+                { id: 3, nombre: "Nachos c/ Queso", precio: 4000, stock: 2 }
+            ]);
+
+            const [peliSeleccionada, setPeliSeleccionada] = useState(null);
+            const [asientos, setAsientos] = useState([]);
+            const [ticket, setTicket] = useState(null);
+            const [nuevaPeli, setNuevaPeli] = useState({ titulo: '', genero: '', horario: '', poster: '' });
+
+            useEffect(() => {
+                localStorage.setItem('sgc_peliculas_v6', JSON.stringify(peliculas));
+            }, [peliculas]);
+
+            // --- FUNCIÓN DE LOGIN CORREGIDA CON REDIRECCIÓN ---
+            const login = (rol) => {
+                setUsuario({ nombre: `Operador ${rol}`, rol: rol });
+                if (rol === 'CONFITERIA') {
+                    setVista('confiteria'); // Redirige al de dulces a su área
+                } else if (rol === 'ADMIN') {
+                    setVista('admin'); // Redirige al admin a gestión
+                } else {
+                    setVista('cartelera'); // Vendedor va a taquilla
+                }
+            };
+
+            const logout = () => { setUsuario(null); setVista('cartelera'); setPeliSeleccionada(null); };
+
+            const venderProducto = (id) => {
+                setProductos(productos.map(p => {
+                    if (p.id === id) {
+                        if (p.stock > 0) {
+                            const nuevoStock = p.stock - 1;
+                            if(nuevoStock === 0) alert("¡BR-12: STOCK AGOTADO!");
+                            return { ...p, stock: nuevoStock };
+                        } else {
+                            alert("ERROR: No hay existencias disponibles.");
+                            return p;
+                        }
+                    }
+                    return p;
+                }));
+            };
+
+            if (!usuario) {
+                return (
+                    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
+                        <div className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 w-full max-w-md text-center shadow-2xl">
+                            <h1 className="text-4xl font-black text-indigo-500 mb-2 tracking-tighter">CINEFLOW</h1>
+                            <p className="text-slate-500 mb-10 uppercase tracking-[0.2em] text-[10px] font-bold">Control de Acceso SGC</p>
+                            <div className="space-y-4">
+                                <button onClick={() => login('ADMIN')} className="w-full bg-red-600/10 border border-red-600/20 p-5 rounded-2xl text-red-500 font-bold hover:bg-red-600 hover:text-white transition-all transform hover:scale-105">ADMINISTRADOR</button>
+                                <button onClick={() => login('VENDEDOR')} className="w-full bg-green-600/10 border border-green-600/20 p-5 rounded-2xl text-green-500 font-bold hover:bg-green-600 hover:text-white transition-all transform hover:scale-105">VENDEDOR TAQUILLA</button>
+                                <button onClick={() => login('CONFITERIA')} className="w-full bg-orange-600/10 border border-orange-600/20 p-5 rounded-2xl text-orange-500 font-bold hover:bg-orange-600 hover:text-white transition-all transform hover:scale-105">PERSONAL CONFITERÍA</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-slate-950 text-white">
+                    <nav className="bg-slate-900/50 backdrop-blur-md border-b border-slate-800 p-4 sticky top-0 z-50">
+                        <div className="container mx-auto flex justify-between items-center">
+                            <div className="flex items-center gap-4">
+                                <h1 className="text-xl font-black text-indigo-500 tracking-tighter">CINEFLOW</h1>
+                                <span className={`role-badge ${
+                                    usuario.rol === 'ADMIN' ? 'bg-red-500/20 text-red-500' : 
+                                    usuario.rol === 'VENDEDOR' ? 'bg-green-500/20 text-green-500' : 'bg-orange-500/20 text-orange-500'
+                                }`}>{usuario.rol}</span>
+                            </div>
+                            <div className="flex gap-2">
+                                {/* FILTRO DE BOTONES POR ROL */}
+                                {usuario.rol !== 'CONFITERIA' && (
+                                    <button onClick={() => setVista('cartelera')} className={`px-4 py-2 rounded-xl transition ${vista === 'cartelera' ? 'bg-slate-800 text-indigo-400 font-bold' : 'text-slate-400'}`}>Cartelera</button>
+                                )}
+                                {usuario.rol === 'ADMIN' && <button onClick={() => setVista('admin')} className={`px-4 py-2 rounded-xl font-bold ${vista === 'admin' ? 'bg-red-600' : 'bg-red-900/30 text-red-500'}`}>Gestión</button>}
+                                {(usuario.rol === 'CONFITERIA' || usuario.rol === 'ADMIN') && (
+                                    <button onClick={() => setVista('confiteria')} className={`px-4 py-2 rounded-xl font-bold ${vista === 'confiteria' ? 'bg-orange-600' : 'bg-orange-900/30 text-orange-500'}`}>Venta Dulces</button>
+                                )}
+                                <button onClick={logout} className="ml-4 bg-slate-800 p-2 rounded-lg hover:bg-slate-700 transition">Salir</button>
+                            </div>
+                        </div>
+                    </nav>
+
+                    <main className="container mx-auto py-10 px-4">
+                        {/* VISTA: CARTELERA (BLOQUEADA PARA CONFITERIA) */}
+                        {vista === 'cartelera' && usuario.rol !== 'CONFITERIA' && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                                {peliculas.map(p => (
+                                    <div key={p.id} className="movie-card group">
+                                        <div className="h-80 overflow-hidden"><img src={p.poster} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" onError={e => e.target.src='https://via.placeholder.com/300x450'}/></div>
+                                        <div className="p-6">
+                                            <h3 className="font-bold text-lg mb-1">{p.titulo}</h3>
+                                            <p className="text-indigo-400 text-xs font-bold mb-4 uppercase">{p.genero} • {p.horario}</p>
+                                            <button onClick={() => setPeliSeleccionada(p)} className="w-full bg-indigo-600 hover:bg-indigo-500 p-3 rounded-xl font-bold shadow-lg shadow-indigo-900/20 transition">Vender Entrada</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* VISTA: CONFITERIA (BLOQUEADA PARA VENDEDOR TAQUILLA) */}
+                        {vista === 'confiteria' && usuario.rol !== 'VENDEDOR' && (
+                            <div className="max-w-5xl mx-auto">
+                                <div className="text-center mb-12">
+                                    <h2 className="text-3xl font-black text-orange-500 uppercase tracking-widest">Módulo Confitería</h2>
+                                    <p className="text-slate-500">Punto de Venta y Control de Inventario</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                    {productos.map(prod => (
+                                        <div key={prod.id} className="product-card border border-slate-800 relative overflow-hidden">
+                                            <div className="text-6xl mb-6">{prod.id === 1 ? '🍿' : prod.id === 2 ? '🥤' : '🧀'}</div>
+                                            <h3 className="font-bold text-xl mb-2">{prod.nombre}</h3>
+                                            <p className="text-2xl font-black text-white mb-4">${prod.precio}</p>
+                                            <div className={`text-[10px] font-black p-1 rounded-md mb-6 uppercase ${prod.stock < 3 ? 'bg-red-500 text-white animate-bounce' : 'bg-slate-800 text-slate-400'}`}>
+                                                Stock Actual: {prod.stock}
+                                            </div>
+                                            <button 
+                                                onClick={() => venderProducto(prod.id)} 
+                                                disabled={prod.stock === 0}
+                                                className={`w-full p-4 rounded-2xl font-black transition ${prod.stock === 0 ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-orange-600 hover:bg-orange-500 shadow-xl shadow-orange-900/20'}`}
+                                            >
+                                                {prod.stock === 0 ? 'AGOTADO' : 'REGISTRAR VENTA'}
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* VISTA: ADMIN (SOLO ADMIN) */}
+                        {vista === 'admin' && usuario.rol === 'ADMIN' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                                <div className="bg-slate-900 p-10 rounded-[2.5rem] admin-form border border-slate-800 shadow-2xl">
+                                    <h2 className="text-2xl font-black mb-8 text-red-500 flex items-center gap-3"><span>⚙️</span> GESTIÓN CARTELERA</h2>
+                                    <input type="text" placeholder="Nombre de la Película" value={nuevaPeli.titulo} onChange={e=>setNuevaPeli({...nuevaPeli, titulo:e.target.value})} />
+                                    <input type="text" placeholder="Género" value={nuevaPeli.genero} onChange={e=>setNuevaPeli({...nuevaPeli, genero:e.target.value})} />
+                                    <input type="text" placeholder="Horario (Ej: 21:00)" value={nuevaPeli.horario} onChange={e=>setNuevaPeli({...nuevaPeli, horario:e.target.value})} />
+                                    <input type="text" placeholder="Ruta Imagen (./imagenes/foto.jpg)" value={nuevaPeli.poster} onChange={e=>setNuevaPeli({...nuevaPeli, poster:e.target.value})} />
+                                    <button onClick={() => {setPeliculas([...peliculas, {...nuevaPeli, id:Date.now()}]); setNuevaPeli({titulo:'', poster:'', genero:'', horario:''})}} className="w-full bg-red-600 hover:bg-red-500 p-4 rounded-2xl font-bold mt-4 shadow-lg shadow-red-900/20 transition">PUBLICAR EN CARTELERA</button>
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold mb-6 text-slate-500">PELÍCULAS ACTIVAS</h2>
+                                    <div className="space-y-3">
+                                        {peliculas.map(p => (
+                                            <div key={p.id} className="flex justify-between items-center p-5 bg-slate-900/50 rounded-2xl border border-slate-800 group">
+                                                <span className="font-bold">{p.titulo}</span>
+                                                <button onClick={() => setPeliculas(peliculas.filter(x => x.id !== p.id))} className="text-red-500 hover:bg-red-500/10 px-4 py-2 rounded-xl transition opacity-0 group-hover:opacity-100">Eliminar</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    {/* MODAL: SELECCIÓN DE ASIENTOS */}
+                    {peliSeleccionada && !ticket && (
+                        <div className="fixed inset-0 bg-black/98 z-[60] flex items-center justify-center p-4 backdrop-blur-md">
+                            <div className="bg-slate-900 p-10 rounded-[3rem] w-full max-w-md border border-slate-800 shadow-2xl">
+                                <div className="text-center mb-10">
+                                    <p className="text-[10px] font-bold text-indigo-500 mb-1 uppercase tracking-widest">Selección de Butacas</p>
+                                    <h2 className="font-black text-2xl truncate">{peliSeleccionada.titulo}</h2>
+                                </div>
+                                <div className="w-full h-1.5 bg-indigo-600 rounded-full mb-12 shadow-[0_0_20px_rgba(79,70,229,0.6)]"></div>
+                                <div className="grid grid-cols-6 gap-3 mb-12">
+                                    {['A','B','C','D'].map(f => [1,2,3,4,5,6].map(n => {
+                                        const id = f+n;
+                                        const isSel = asientos.includes(id);
+                                        return <button key={id} onClick={() => setAsientos(isSel ? asientos.filter(x=>x!==id) : [...asientos, id])} 
+                                            className={`h-10 rounded-t-xl transition-all transform active:scale-90 ${isSel ? 'bg-green-500 shadow-lg shadow-green-900/40 scale-110' : 'bg-slate-800 hover:bg-slate-700'}`}>
+                                            <span className="text-[8px] opacity-30 font-bold">{id}</span>
+                                        </button>
+                                    }))}
+                                </div>
+                                <div className="flex gap-4">
+                                    <button onClick={()=>setPeliSeleccionada(null)} className="flex-1 p-4 bg-slate-800 rounded-2xl font-bold">VOLVER</button>
+                                    <button onClick={()=>setTicket({peli: peliSeleccionada.titulo, seats: asientos.join(', '), total: asientos.length * 5000, id: Math.floor(Math.random()*90000)})} 
+                                            disabled={asientos.length === 0}
+                                            className="flex-1 p-4 bg-indigo-600 rounded-2xl font-bold shadow-lg shadow-indigo-900/40 disabled:opacity-20 transition">EMITIR BOLETO</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TICKET DE PAPEL TERMICO */}
+                    {ticket && (
+                        <div className="fixed inset-0 bg-black/99 z-[70] flex items-center justify-center p-4">
+                            <div className="ticket-paper w-full max-w-xs text-black transform rotate-1 shadow-2xl">
+                                <div className="text-center border-b-2 border-dashed border-slate-300 pb-6 mb-6">
+                                    <h2 className="font-black text-3xl tracking-tighter mb-1">CINEFLOW</h2>
+                                    <p className="text-[9px] font-bold text-gray-400 tracking-[0.3em] uppercase">SGC v6.0 - Oficial</p>
+                                </div>
+                                <div className="space-y-4 mb-10 text-sm">
+                                    <div><p className="text-[9px] text-gray-400 uppercase font-bold">Función</p><p className="font-black text-lg leading-none">{ticket.peli}</p></div>
+                                    <div className="flex justify-between">
+                                        <div><p className="text-[9px] text-gray-400 uppercase font-bold">Butacas</p><p className="font-black italic">{ticket.seats}</p></div>
+                                        <div className="text-right"><p className="text-[9px] text-gray-400 uppercase font-bold">Fecha</p><p className="font-bold">09/05/2026</p></div>
+                                    </div>
+                                    <div className="pt-6 border-t border-slate-100 flex justify-between items-end">
+                                        <p className="text-[10px] font-bold">Monto Total</p>
+                                        <p className="text-3xl font-black tracking-tighter">${ticket.total}</p>
+                                    </div>
+                                </div>
+                                <div className="bg-slate-50 p-4 text-[9px] font-mono text-center mb-8 border border-slate-100 rounded">
+                                    ID OPERACIÓN: {ticket.id} <br/> 
+                                    EMITIDO POR: {usuario.nombre}
+                                </div>
+                                <button onClick={()=>{setTicket(null); setPeliSeleccionada(null); setAsientos([]);}} className="w-full bg-black text-white p-4 font-black rounded-lg active:scale-95 transition">FINALIZAR Y CERRAR</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<CineFlowSGC />);
+    </script>
+</body>
+</html>
