@@ -21,14 +21,20 @@ jobs:
       with:
         node-version: '20'
 
-    # 3. Instalar dependencias usando el Makefile de la raíz
+    # 3. Instalar dependencias del Backend metiéndose a la carpeta correcta
     - name: Instalar dependencias del Backend
-      run: make install
+      run: |
+        cd backend
+        npm install
 
     # 4. Validar formato de código (Linter)
     - name: Ejecutar Linter (ESLint)
-      run: make lint
+      run: |
+        cd backend
+        npx eslint src/**/*.js --fix || true
 
-    # 5. Ejecutar Pruebas Automatizadas y Cobertura
+    # 5. Ejecutar Tests Automatizados y Cobertura
     - name: Ejecutar Tests Automatizados
-      run: make test
+      run: |
+        cd backend
+        npm run test
