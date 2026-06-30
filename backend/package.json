@@ -12,7 +12,7 @@
     "testEnvironment": "node",
     "coverageDirectory": "coverage",
     "testResultsProcessor": "jest-sonar-reporter"
-  }
+  },
   "dependencies": {
     "express": "^4.19.2",
     "cors": "^2.8.5",
