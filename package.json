@@ -1,5 +1,8 @@
 {
   "devDependencies": {
     "jest-sonar-reporter": "^2.0.0"
+  },
+  "dependencies": {
+    "helmet": "^8.2.0"
   }
 }

@@ -62,7 +62,7 @@ router.get('/productos', verificarToken, permitirRoles('ADMIN', 'CONFITERIA'), (
 // Vender dulce: ADMIN y CONFITERIA
 router.post('/productos/:id/vender', verificarToken, permitirRoles('ADMIN', 'CONFITERIA'), (req, res) => {
     try {
-        const idProd = parseInt(req.params.id);
+        const idProd = Number.parseInt(req.params.id, 10);
         const productoActualizado = cineService.venderProductoConfiteria(idProd);
         res.json(productoActualizado);
     } catch (error) {

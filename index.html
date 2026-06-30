@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <title>CineFilos SGC - Sistema Profesional v6</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/react@18.2.0/umd/react.development.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.24.0/babel.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="cartelera.js"></script>
 </head>
 <body>
     <div id="root"></div>
@@ -42,15 +43,33 @@
                 localStorage.setItem('sgc_peliculas_v6', JSON.stringify(peliculas));
             }, [peliculas]);
 
-            // --- FUNCIÓN DE LOGIN CORREGIDA CON REDIRECCIÓN ---
+            // --- FUNCIÓN DE LOGIN CON CONTRASEÑA ---
             const login = (rol) => {
-                setUsuario({ nombre: `Operador ${rol}`, rol: rol });
-                if (rol === 'CONFITERIA') {
-                    setVista('confiteria'); // Redirige al de dulces a su área
-                } else if (rol === 'ADMIN') {
-                    setVista('admin'); // Redirige al admin a gestión
+                let passwordCorrecta = false;
+                let passIngresada = prompt(`Introduce la contraseña para el rol ${rol}:`);
+
+                // Validamos la contraseña según el rol seleccionado
+                if (rol === 'ADMIN' && passIngresada === 'admin123') {
+                    passwordCorrecta = true;
+                } else if (rol === 'VENDEDOR' && passIngresada === 'taquilla123') {
+                    passwordCorrecta = true;
+                } else if (rol === 'CONFITERIA' && passIngresada === 'dulces123') {
+                    passwordCorrecta = true;
+                }
+
+                // Si la contraseña es correcta, iniciamos sesión y redirigimos
+                if (passwordCorrecta) {
+                    setUsuario({ nombre: `Operador ${rol}`, rol: rol });
+                    
+                    if (rol === 'CONFITERIA') {
+                        setVista('confiteria');
+                    } else if (rol === 'ADMIN') {
+                        setVista('admin');
+                    } else {
+                        setVista('cartelera');
+                    }
                 } else {
-                    setVista('cartelera'); // Vendedor va a taquilla
+                    alert("❌ Contraseña incorrecta. Acceso denegado.");
                 }
             };
 
@@ -100,7 +119,6 @@
                                 }`}>{usuario.rol}</span>
                             </div>
                             <div className="flex gap-2">
-                                {/* FILTRO DE BOTONES POR ROL */}
                                 {usuario.rol !== 'CONFITERIA' && (
                                     <button onClick={() => setVista('cartelera')} className={`px-4 py-2 rounded-xl transition ${vista === 'cartelera' ? 'bg-slate-800 text-indigo-400 font-bold' : 'text-slate-400'}`}>Cartelera</button>
                                 )}
@@ -114,12 +132,17 @@
                     </nav>
 
                     <main className="container mx-auto py-10 px-4">
-                        {/* VISTA: CARTELERA (BLOQUEADA PARA CONFITERIA) */}
                         {vista === 'cartelera' && usuario.rol !== 'CONFITERIA' && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                                 {peliculas.map(p => (
                                     <div key={p.id} className="movie-card group">
-                                        <div className="h-80 overflow-hidden"><img src={p.poster} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" onError={e => e.target.src='https://via.placeholder.com/300x450'}/></div>
+                                        <div className="h-80 overflow-hidden">
+                                            <img 
+                                                src={p.poster} 
+                                                className="w-full h-full object-cover group-hover:scale-110 transition duration-500" 
+                                                onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450'; }}
+                                            />
+                                        </div>
                                         <div className="p-6">
                                             <h3 className="font-bold text-lg mb-1">{p.titulo}</h3>
                                             <p className="text-indigo-400 text-xs font-bold mb-4 uppercase">{p.genero} • {p.horario}</p>
@@ -130,7 +153,6 @@
                             </div>
                         )}
 
-                        {/* VISTA: CONFITERIA (BLOQUEADA PARA VENDEDOR TAQUILLA) */}
                         {vista === 'confiteria' && usuario.rol !== 'VENDEDOR' && (
                             <div className="max-w-5xl mx-auto">
                                 <div className="text-center mb-12">
@@ -159,7 +181,6 @@
                             </div>
                         )}
 
-                        {/* VISTA: ADMIN (SOLO ADMIN) */}
                         {vista === 'admin' && usuario.rol === 'ADMIN' && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                                 <div className="bg-slate-900 p-10 rounded-[2.5rem] admin-form border border-slate-800 shadow-2xl">
@@ -185,7 +206,6 @@
                         )}
                     </main>
 
-                    {/* MODAL: SELECCIÓN DE ASIENTOS */}
                     {peliSeleccionada && !ticket && (
                         <div className="fixed inset-0 bg-black/98 z-[60] flex items-center justify-center p-4 backdrop-blur-md">
                             <div className="bg-slate-900 p-10 rounded-[3rem] w-full max-w-md border border-slate-800 shadow-2xl">
@@ -214,7 +234,6 @@
                         </div>
                     )}
 
-                    {/* TICKET DE PAPEL TERMICO */}
                     {ticket && (
                         <div className="fixed inset-0 bg-black/99 z-[70] flex items-center justify-center p-4">
                             <div className="ticket-paper w-full max-w-xs text-black transform rotate-1 shadow-2xl">

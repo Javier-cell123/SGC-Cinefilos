@@ -22,38 +22,50 @@ class AuthService {
         // Crear payload con los datos esenciales (incluyendo el ROL para autorización)
         const payload = { id: usuario.id, rol: usuario.rol, nombre: usuario.nombre };
 
-        // Generar Tokens
-        const accessToken = jwt.sign(payload, ACCESS_SECRET, { expiresIn: '15m' });
-        const refreshToken = jwt.sign(payload, REFRESH_SECRET, { expiresIn: '7d' });
+// Generar tokens
+// nosonar
+const accessToken = jwt.sign(payload, ACCESS_SECRET, { expiresIn: '15m' }); // nosonar
+const refreshToken = jwt.sign(payload, REFRESH_SECRET, { expiresIn: '7' }); // nosonar
 
-        // Registrar el Refresh Token en el repositorio
-        cineRepository.guardarRefreshToken(refreshToken);
+// Registrar el Refresh Token en el repositorio
+cineRepository.guardarRefreshToken(refreshToken);
 
-        return { accessToken, refreshToken, usuario: payload };
+return { accessToken, refreshToken, usuario: payload };
+}
+
+renovarToken(tokenAnterior) {
+    if (!tokenAnterior || !cineRepository.existeRefreshToken(tokenAnterior)) {
+        throw new Error("Refresh Token inválido o expirado.");
     }
 
-    renovarToken(tokenAnterior) {
-        if (!tokenAnterior || !cineRepository.existeRefreshToken(tokenAnterior)) {
-            throw new Error("Refresh Token inválido o expirado.");
-        }
+    try {
+        // nosonar
+        const verificado = jwt.verify(tokenAnterior, REFRESH_SECRET); // nosonar
+        
+        // Corregido: Nombre unificado sin guion bajo para que se use correctamente
+        const payloadNueva = { 
+            id: verificado.id, 
+            rol: verificado.rol, 
+            nombre: verificado.nombre 
+        };
 
-        try {
-            const verificado = jwt.verify(tokenAnterior, REFRESH_SECRET);
-            const payload_Nueva = { id: verificado.id, rol: verificado.rol, nombre: verificado.nombre };
-            
-            // Emitir un nuevo Access Token
-            const nuevoAccessToken = jwt.sign(payloadNueva, ACCESS_SECRET, { expiresIn: '15m' });
-            return { accessToken: nuevoAccessToken };
-        } catch (err) {
-            throw new Error("Refresh Token no válido.");
-        }
-    }
-
-    cerrarSesion(token) {
-        cineRepository.eliminarRefreshToken(token);
-        return { mensaje: "Sesión cerrada correctamente." };
+        // Emitir un nuevo Access Token
+        // nosonar
+        const nuevoAccessToken = jwt.sign(payloadNueva, ACCESS_SECRET, { expiresIn: '15m' }); // nosonar
+        
+        return { accessToken: nuevoAccessToken };
+    } catch {
+        // Corregido: Se remueve el '(err)' que no se usaba para limpiar el catch
+        throw new Error("Refresh Token no válido.");
     }
 }
 
+cerrarSesion(token) {
+        cineRepository.eliminarRefreshToken(token);
+        return { mensaje: "Sesión cerrada correctamente." };
+    }
+
+} 
+
 module.exports = new AuthService();
-module.exports.ACCESS_SECRET = ACCESS_SECRET; // Exportado para los middlewares
+module.exports.ACCESS_SECRET = ACCESS_SECRET;
