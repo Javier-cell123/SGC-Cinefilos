@@ -28,6 +28,13 @@ jobs:
     - name: Instalar dependencias del Backend
       run: make install
 
-    # 4. Validar la calidad del código (Estilo y Sintaxis) usando el Makefile
-    - name: Ejecutar Linter (ESLint)
-      run: make lint
+# 6. Enviar métricas de calidad a SonarQube/SonarCloud
+    - name: Analizar con SonarQube
+      uses: sonarsource/sonarcloud-github-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      with:
+        args: >
+          -Dsonar.organization=TU_ORGANIZACION_DE_SONARCLOUD
+          -Dsonar.projectKey=CineFlow-SGC
