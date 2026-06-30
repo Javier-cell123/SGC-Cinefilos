@@ -3,10 +3,16 @@
   "version": "1.0.0",
   "description": "Backend por capas para CineFlow",
   "main": "src/app.js",
-  "scripts": {
+ "scripts": {
     "start": "node src/app.js",
-    "dev": "nodemon src/app.js"
+    "dev": "nodemon src/app.js",
+    "test": "jest --verbose --runInBand --coverage"
   },
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "coverage",
+    "testResultsProcessor": "jest-sonar-reporter"
+  }
   "dependencies": {
     "express": "^4.19.2",
     "cors": "^2.8.5",
